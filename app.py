@@ -190,14 +190,15 @@ def download_pdf():
     html_content = re.sub(r"^\s*<div class='page-break'></div>", "", html_content, flags=re.IGNORECASE)
 
     section_titles = [
-        "Executive Summary",
-        "Strategic Roadmap: From Boardroom to Impact",
-        "Building Competencies",
-        "Recognition & Accreditation",
-        "Functional Capabilities",
-        "Digital Enablement for ESG",
-        "Phased Implementation Roadmap"
-    ]
+    "Executive Summary",
+    "Strategic Roadmap: From Boardroom to Impact",
+    "Building Competencies",
+    "Recognition & Accreditation",   # <-- Problematic one
+    "Functional Capabilities",
+    "Digital Enablement for ESG",
+    "Phased Implementation Roadmap"
+]
+
 
     for i, title in enumerate(section_titles, start=1):
         pattern = rf"<h2>\s*{i}\.\s*{re.escape(title)}\s*</h2>"
@@ -207,6 +208,13 @@ def download_pdf():
             f"{i}. {title}</h2>"
         )
         html_content = re.sub(pattern, replacement, html_content, flags=re.IGNORECASE)
+
+       # Fallback fix if heading 4 was not matched by regex (due to formatting issues)
+    html_content = html_content.replace(
+    "<h2>4. Recognition & Accreditation</h2>",
+    "<div class='page-break'></div><h2 style='color:#ffffff; background-color:#1a4d8f; padding:10px 15px; border-radius:8px 8px 0 0;'>4. Recognition & Accreditation</h2>"
+)
+ 
 
     company_profile_html = f"""
     <div class="company-profile">
