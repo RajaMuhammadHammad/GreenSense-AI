@@ -12,13 +12,6 @@ import re
 import fitz  # PyMuPDF
 
 
-import base64
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-
-
 load_dotenv()
 app = Flask(__name__)
 
@@ -360,82 +353,13 @@ def download_pdf():
     output.seek(0)
     pdf_bytes = output.getvalue()
 
-    # ✅ Send via Email (if email provided)
-    email_status = "not_provided"
-    if client_email:
-        try:
-            from email.mime.multipart import MIMEMultipart
-            from email.mime.application import MIMEApplication
-            from email.mime.text import MIMEText
-            import smtplib
-
-            sender_email = os.getenv("EMAIL_SENDER")
-            sender_password = os.getenv("EMAIL_PASSWORD")
-            smtp_server = os.getenv("SMTP_SERVER")
-            smtp_port = int(os.getenv("SMTP_PORT"))
-
-            message = MIMEMultipart()
-            message["From"] = sender_email
-            message["To"] = client_email
-            message["Subject"] = "Your Sustainability Report"
-
-            body = "Dear user,\n\nPlease find your sustainability report PDF attached.\n\nRegards,\nED Watch Team"
-            message.attach(MIMEText(body, "plain"))
-
-            part = MIMEApplication(pdf_bytes, _subtype="pdf")
-            part.add_header("Content-Disposition", "attachment", filename=f"{company_name}_report.pdf")
-            message.attach(part)
-
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(sender_email, sender_password)
-                server.send_message(message)
-
-            email_status = "sent"
-        except Exception as e:
-            print("❌ Email sending failed:", e)
-            email_status = "failed"
-
+   
     # ✅ Return as direct download
     response = make_response(pdf_bytes)
     response.headers["Content-Disposition"] = f"attachment; filename={company_name}_sustainability_report.pdf"
     response.headers["Content-Type"] = "application/pdf"
-    response.headers["X-Email-Status"] = email_status
     return response
 
-
-def send_email_with_pdf(receiver_email, pdf_bytes):
-    try:
-        sender_email = os.getenv("EMAIL_SENDER")
-        sender_password = os.getenv("EMAIL_PASSWORD")
-        smtp_server = os.getenv("SMTP_SERVER")
-        smtp_port = int(os.getenv("SMTP_PORT"))
-
-        # Create the email
-        msg = MIMEMultipart()
-        msg['From'] = sender_email
-        msg['To'] = receiver_email
-        msg['Subject'] = "Your Sustainability Report (ED Watch)"
-        msg.attach(MIMEText("Please find attached your sustainability report PDF.", 'plain'))
-
-        # Attach PDF
-        attachment = MIMEApplication(pdf_bytes, _subtype='pdf')
-        attachment.add_header('Content-Disposition', 'attachment', filename="report.pdf")
-        msg.attach(attachment)
-
-        # Send the email
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.send_message(msg)
-        server.quit()
-
-        print("✅ Email sent successfully.")
-        return True
-
-    except Exception as e:
-        print(f"❌ Failed to send email: {e}")
-        return False
 
 
 @app.route("/validate-email", methods=["POST"])
