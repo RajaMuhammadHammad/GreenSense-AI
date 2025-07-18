@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, make_response
+from rag_engine import retrieve_context
 from xhtml2pdf import pisa
 from io import BytesIO
 from dotenv import load_dotenv
@@ -36,10 +37,19 @@ def chatbot():
 @app.route("/generate", methods=["POST"])
 def generate():
     data = json.loads(request.form["chat_data"])
-    current_year = datetime.today().year
+    current_year = datetime.today().year    
+
+    query = f"Sustainability roadmap for a {data.get('company_size', '')} company in the {data.get('sector_industry', '')} sector located in {data.get('region', '')}, with focus on climate impact, energy consumption, emissions, and sustainability goals."
+
+    # ✅ Retrieve context
+    retrieved_docs = retrieve_context(query)
+    rag_context = "\n\n".join([doc.get("content", "") for doc in retrieved_docs])
+
+    # ... rest of your prompt logic remains unchanged ...
 
     prompt = f"""
-You are a sustainability consultant.
+You are a sustainability consultant. Based on the company information and sustainability data below, generate a roadmap and SDG report in HTML format.
+   {rag_context}
 
 Company Profile:
 - Name: {data.get('company_name', 'N/A')}
@@ -59,7 +69,7 @@ Climate & Emissions:
 - Total GHG Emissions: {data.get('total_emissions', 'N/A')} tCO2e
 - Monitoring Tools: {data.get('monitoring_tools', 'N/A')}
 
-Energy:
+    Energy:
 - Renewable Energy %: {data.get('renewable_energy_use', 'N/A')}
 - Energy Audit: {data.get('energy_audit', 'N/A')}
 - Energy-saving Technologies: {', '.join(data.get('energy_tech', []))}
@@ -190,14 +200,15 @@ def download_pdf():
     html_content = re.sub(r"^\s*<div class='page-break'></div>", "", html_content, flags=re.IGNORECASE)
 
     section_titles = [
-        "Executive Summary",
-        "Strategic Roadmap: From Boardroom to Impact",
-        "Building Competencies",
-        "Recognition & Accreditation",
-        "Functional Capabilities",
-        "Digital Enablement for ESG",
-        "Phased Implementation Roadmap"
-    ]
+    "Executive Summary",
+    "Strategic Roadmap: From Boardroom to Impact",
+    "Building Competencies",
+    "Recognition & Accreditation",   # <-- Problematic one
+    "Functional Capabilities",
+    "Digital Enablement for ESG",
+    "Phased Implementation Roadmap"
+]
+
 
     for i, title in enumerate(section_titles, start=1):
         pattern = rf"<h2>\s*{i}\.\s*{re.escape(title)}\s*</h2>"
@@ -207,6 +218,13 @@ def download_pdf():
             f"{i}. {title}</h2>"
         )
         html_content = re.sub(pattern, replacement, html_content, flags=re.IGNORECASE)
+
+       # Fallback fix if heading 4 was not matched by regex (due to formatting issues)
+    html_content = html_content.replace(
+    "<h2>4. Recognition & Accreditation</h2>",
+    "<div class='page-break'></div><h2 style='color:#ffffff; background-color:#1a4d8f; padding:10px 15px; border-radius:8px 8px 0 0;'>4. Recognition & Accreditation</h2>"
+)
+ 
 
     company_profile_html = f"""
     <div class="company-profile">
