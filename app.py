@@ -9,7 +9,7 @@ import google.generativeai as genai
 import os
 import json
 import re
-import fitz  # PyMuPDF
+import fitz  
 
 
 load_dotenv()
