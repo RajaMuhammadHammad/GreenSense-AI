@@ -1,6 +1,5 @@
-# Pin numpy first so faiss imports cleanly
+# keep these as you have them
 numpy==1.26.4
-
 Flask==3.0.3
 xhtml2pdf==0.2.11
 PyPDF2==3.0.1
@@ -8,8 +7,11 @@ python-dotenv==1.0.1
 google-generativeai==0.4.1
 gunicorn==21.2.0
 faiss-cpu==1.7.4
-tqdm
+tqdm==4.67.1
 
-# add these:
-sentence-transformers==2.2.2
+# embeddings stack (CPU)
 torch==2.2.2
+sentence-transformers==2.2.2
+transformers==4.33.3
+huggingface-hub==0.13.4
+tokenizers==0.13.3
